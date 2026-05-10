@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AssetCategory {
+  SERVER
+  SWITCH
+  FIREWALL
+  PC
+  LAPTOP
+  PRINTER
+  OTHER
+}
+
+enum ServiceType {
+  PREVENTIVE
+  CORRECTIVE
+  ON_CALL
+  GUARANTEE
+}
+
+model Asset {
+  id           String        @id @default(cuid())
+  tag          String        @unique
+  category     AssetCategory
+  serialNumber String        @map("serial_number")
+  location     String
+  incidents    Incident[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("assets")
+}
+
+model Incident {
+  id                 String      @id @default(cuid())
+  logNumber          String      @unique @map("log_number")
+  date               DateTime
+  startTime          DateTime    @map("start_time")
+  endTime            DateTime    @map("end_time")
+  serviceType        ServiceType @map("service_type")
+  problemDescription String      @map("problem_description")
+  correction         String
+  hardwareReplaced   Json?       @map("hardware_replaced")
+  engineerSignature  String?     @map("engineer_signature") // Base64 or URL
+  customerSignature  String?     @map("customer_signature") // Base64 or URL
+  
+  assetId            String
+  asset              Asset       @relation(fields: [assetId], references: [id])
+  
+  serverLog          ServerLog?
+  networkLog         NetworkLog?
+
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@map("incidents")
+}
+
+model ServerLog {
+  id         String   @id @default(cuid())
+  incidentId String   @unique @map("incident_id")
+  incident   Incident @relation(fields: [incidentId], references: [id])
+
+  // a. Physical Checklist (JSON: { cleaning: boolean, cableManagement: boolean, etc. })
+  physicalChecklist Json @map("physical_checklist")
+
+  // b. Hardware Specs
+  cpu        String
+  ram        String
+  storage    String
+  nic        String
+
+  // c. System Status
+  os         String
+  antivirus  String
+  ipAddress  String @map("ip_address")
+
+  // d. Performance Metrics (JSON Array of objects: { scale, counter, last, avg, min, max })
+  performanceMetrics Json @map("performance_metrics")
+
+  // e. Optimization Tasks (JSON: { diskCleanup: boolean, updates: boolean, etc. })
+  optimizationTasks Json @map("optimization_tasks")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("server_logs")
+}
+
+model NetworkLog {
+  id         String   @id @default(cuid())
+  incidentId String   @unique @map("incident_id")
+  incident   Incident @relation(fields: [incidentId], references: [id])
+
+  // Physical check
+  physicalCheck Json @map("physical_check")
+
+  // Interface status (JSON: { ether1: string, ether2: string, ... })
+  interfaceStatus Json @map("interface_status")
+
+  // Hardware resources
+  cpuUsage    String @map("cpu_usage")
+  ramUsage    String @map("ram_usage")
+  temperature String
+
+  // Software/Firmware functions
+  firmwareVersion String @map("firmware_version")
+  
+  // Security (For Firewall)
+  securityServices Json? @map("security_services") // { webFilter: boolean, ips: boolean, etc. }
+
+  // Network tests
+  ipManagement String @map("ip_management")
+  vlanStatus   String @map("vlan_status")
+  pingResults  String @map("ping_results")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("network_logs")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  name              String?
+  password          String
+  twoFactorSecret   String?  @map("two_factor_secret")
+  twoFactorEnabled  Boolean  @default(false) @map("two_factor_enabled")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("users")
+}
