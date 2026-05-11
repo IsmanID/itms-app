@@ -6,11 +6,16 @@ import { verify } from "otplib";
 import { CredentialsSignin } from "next-auth";
 
 class OTPRequiredError extends CredentialsSignin {
-  code = "OTP_REQUIRED";
+  constructor() {
+    super();
+    this.code = "OTP_REQUIRED";
+  }
 }
-
 class InvalidOTPError extends CredentialsSignin {
-  code = "INVALID_OTP";
+  constructor() {
+    super();
+    this.code = "INVALID_OTP";
+  }
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
